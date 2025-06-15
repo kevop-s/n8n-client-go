@@ -122,13 +122,34 @@ For detailed API documentation, see the [GoDoc documentation](https://pkg.go.dev
 
 ## Running Locally
 
+### Prerequisites
+
+1. Go 1.24 or higher
+
+### Setup
+
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/kevop-s/n8n-client-go.git
    cd n8n-client-go
    ```
 
 2. Set up your n8n instance URL and API key in your environment or in the code.
+
+You can run n8n locally using docker compose:
+
+> Before running the docker compose command, make sure you have a `.env` file in the root directory of the repository. You can copy the `.env.example` file to `.env` and fill in the values.
+
+```bash
+docker compose up -d
+```
+
+Then add the n8n.example.com domain to your `/etc/hosts` file:
+
+```bash
+127.0.0.1 n8n.example.com
+```
 
 3. Run the example:
    ```bash
