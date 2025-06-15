@@ -21,9 +21,9 @@ type N8nNode struct {
 	WaitBetweenTries int                    `json:"waitBetweenTries"`
 	ContinueOnFail   bool                   `json:"continueOnFail"`
 	OnError          string                 `json:"onError"`
-	Parameters       map[string]interface{} `json:"parameters"`
+	Parameters       map[string]interface{} `json:"parameters,omitempty"`
 	Position         []int                  `json:"position"`
-	Credentials      map[string]interface{} `json:"credentials"`
+	Credentials      map[string]interface{} `json:"credentials,omitempty"`
 }
 
 // GetNodes retrieves all nodes from a workflow
@@ -81,6 +81,12 @@ func (w *Workflows) AddNode(workflowId string, newNode N8nNode) (N8nNode, error)
 
 	if err != nil {
 		return N8nNode{}, err
+	}
+
+	for _, node := range workflow.Nodes {
+		if node.Name == newNode.Name {
+			return N8nNode{}, fmt.Errorf("node already exists, use a different name")
+		}
 	}
 
 	var finalNodes []N8nNode

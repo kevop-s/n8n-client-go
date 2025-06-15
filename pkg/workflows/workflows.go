@@ -14,13 +14,14 @@ type Workflows struct {
 }
 
 type N8nWorkflow struct {
-	Id          string                   `json:"id,omitempty"`
-	Name        string                   `json:"name"`
-	Active      bool                     `json:"active,omitempty"`
-	Nodes       []N8nNode                `json:"nodes"`
-	Connections map[string][]interface{} `json:"connections"`
-	Settings    N8nWorkflowSettings      `json:"settings"`
-	StaticData  string                   `json:"staticData,omitempty"`
+	Id             string                 `json:"id,omitempty"`
+	Name           string                 `json:"name"`
+	Active         bool                   `json:"active,omitempty"`
+	Nodes          []N8nNode              `json:"nodes"`
+	ConnectionsMap map[string]interface{} `json:"connections"`
+	Connections    []N8nConnection        `json:"connectionsObject,omitempty"`
+	Settings       N8nWorkflowSettings    `json:"settings"`
+	StaticData     string                 `json:"staticData,omitempty"`
 }
 
 type N8nWorkflowSettings struct {
@@ -52,7 +53,17 @@ func (w *Workflows) GetWorkflow(id string) (N8nWorkflow, error) {
 
 	var workflow N8nWorkflow
 	err = json.Unmarshal(resp, &workflow)
+	if err != nil {
+		return N8nWorkflow{}, err
+	}
 
+	var workflowConnectionsMap map[string]interface{}
+	err = json.Unmarshal(resp, &workflowConnectionsMap)
+	if err != nil {
+		return N8nWorkflow{}, err
+	}
+
+	workflow.Connections, err = w.ParseConnectionsToObject(workflowConnectionsMap)
 	if err != nil {
 		return N8nWorkflow{}, err
 	}
@@ -71,7 +82,7 @@ func (w *Workflows) CreateWorkflow(workflowData N8nWorkflow) (N8nWorkflow, error
 	}
 
 	workflowData.Nodes = []N8nNode{}
-	workflowData.Connections = map[string][]interface{}{}
+	workflowData.ConnectionsMap = map[string]interface{}{}
 	w.setDefaultWorkflowSettings(&workflowData)
 
 	jsonWorkflow, err := json.Marshal(workflowData)
@@ -109,9 +120,12 @@ func (w *Workflows) UpdateWorkflow(id string, workflowData N8nWorkflow) (N8nWork
 	combinedWorkflowData := w.combineWorkflows(currentWorkflow, workflowData)
 	// remove readonly fields
 	combinedWorkflowData.Id = ""
+
+	// keep current nodes and connections if not specified in update
 	combinedWorkflowData.Nodes = currentWorkflow.Nodes
 	combinedWorkflowData.Connections = currentWorkflow.Connections
 
+	// override current nodes and connections if specified in update
 	if len(workflowData.Nodes) > 0 {
 		combinedWorkflowData.Nodes = workflowData.Nodes
 	}
@@ -120,7 +134,18 @@ func (w *Workflows) UpdateWorkflow(id string, workflowData N8nWorkflow) (N8nWork
 		combinedWorkflowData.Connections = workflowData.Connections
 	}
 
+	combinedWorkflowData.ConnectionsMap, err = w.ParseConnectionsToMap(combinedWorkflowData.Connections)
+
+	if err != nil {
+		return N8nWorkflow{}, err
+	}
+
+	// remove connections from combinedWorkflowData before sending to n8n as it is an abstract type
+	// we will send the connectionsMap instead
+	combinedWorkflowData.Connections = nil
+
 	jsonWorkflow, err := json.Marshal(combinedWorkflowData)
+
 	if err != nil {
 		return N8nWorkflow{}, err
 	}
@@ -160,6 +185,7 @@ func (w *Workflows) DeleteWorkflow(id string) (bool, error) {
 	return true, nil
 }
 
+// combineWorkflows combines two workflows into one, overwriting the original workflow with the update workflow
 func (w *Workflows) combineWorkflows(originalWorkflow N8nWorkflow, updateWorkflow N8nWorkflow) N8nWorkflow {
 
 	jsonWorkflowOriginal, err := json.Marshal(originalWorkflow)
@@ -185,6 +211,7 @@ func (w *Workflows) combineWorkflows(originalWorkflow N8nWorkflow, updateWorkflo
 	return finalWorkflow
 }
 
+// setDefaultWorkflowSettings sets default values for workflow settings if they are not specified
 func (w *Workflows) setDefaultWorkflowSettings(workflow *N8nWorkflow) {
 	if workflow.Settings.SaveDataErrorExecution == "" {
 		workflow.Settings.SaveDataErrorExecution = "all"
