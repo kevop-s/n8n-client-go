@@ -19,7 +19,7 @@ func TestNewTags(t *testing.T) {
 
 func TestGetTag(t *testing.T) {
 	tests := []struct {
-		name          string
+		name         string
 		server       *httptest.Server
 		tagId        string
 		expectedTag  N8nTag
@@ -82,7 +82,7 @@ func TestGetTag(t *testing.T) {
 
 func TestCreateTag(t *testing.T) {
 	tests := []struct {
-		name         string
+		name        string
 		server      *httptest.Server
 		tagName     string
 		expectError bool
@@ -127,7 +127,7 @@ func TestCreateTag(t *testing.T) {
 
 func TestUpdateTag(t *testing.T) {
 	tests := []struct {
-		name         string
+		name        string
 		server      *httptest.Server
 		id          string
 		tagName     string
@@ -174,7 +174,7 @@ func TestUpdateTag(t *testing.T) {
 
 func TestDeleteTag(t *testing.T) {
 	tests := []struct {
-		name         string
+		name        string
 		server      *httptest.Server
 		id          string
 		expectError bool
